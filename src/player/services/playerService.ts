@@ -1,45 +1,43 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Player } from '../interfaces/player.interface';
+import { Players } from '../interfaces/player.interface';
 import { CreatePlayerDto } from '../dto/create-player.dto';
 import { UpdatePlayerDto } from '../dto/update-player.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Player } from '../entities/player.entitie';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class PlayerService {
-  private players: Player[] = [];
-  private idCounter = 1; // Để tạo ID giả
+  constructor(
+    @InjectRepository(Player) private readonly playerRepository: Repository<Player>,
+  ) {}
 
-  create(createPlayerDto: CreatePlayerDto): Player {
-    const newPlayer: Player = {
-      id: this.idCounter++,
-      ...createPlayerDto,
-    };
-    this.players.push(newPlayer);
-    return newPlayer;
+  create(createPlayerDto: CreatePlayerDto): Promise<Player> {
+    const player : Player =  new Player();
+    player.id = createPlayerDto.id;
+    player.name = createPlayerDto.name;
+    player.club = createPlayerDto.club;
+    return this.playerRepository.save(player);
   }
 
-  findAll(): Player[] {
-    return this.players;
+  findAll(): Promise<Player[]> {
+    return this.playerRepository.find();
   }
 
-  findOne(id: number): Player {
-    const player = this.players.find(player => player.id === id);
-    if (!player) {
-      throw new NotFoundException(`Player with ID ${id} not found`);
-    }
-    return player;
+  viewPlayer(id: number): Promise<Player> {
+    return this.playerRepository.findOneBy({ id });
   }
 
-  update(id: number, updatePlayerDto: UpdatePlayerDto): Player {
-    const player = this.findOne(id); // Kiểm tra và tìm player
-    Object.assign(player, updatePlayerDto);
-    return player;
+
+  updatePlayer(id: number, updateUserDto: UpdatePlayerDto): Promise<Player> {
+    const player: Player = new Player();
+    player.id = id;
+    player.name = updateUserDto.name;
+    player.club = updateUserDto.club;
+    return this.playerRepository.save(player);
   }
 
-  remove(id: number): void {
-    const index = this.players.findIndex(player => player.id === id);
-    if (index === -1) {
-      throw new NotFoundException(`Player with ID ${id} not found`);
-    }
-    this.players.splice(index, 1); // Xóa player khỏi mảng
+  removePlayer(id: number): Promise<{ affected?: number }> {
+    return this.playerRepository.delete(id);
   }
 }
