@@ -1,7 +1,7 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+const { Column, Entity, PrimaryGeneratedColumn } = require('typeorm');
 
 @Entity()
-export class Player {
+export class PlayerEntity {
   @PrimaryGeneratedColumn()
   id: number;
 

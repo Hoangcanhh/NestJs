@@ -1,43 +1,71 @@
+
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Players } from '../interfaces/player.interface';
+
 import { CreatePlayerDto } from '../dto/create-player.dto';
 import { UpdatePlayerDto } from '../dto/update-player.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Player } from '../entities/player.entitie';
+import { PlayerEntity } from '../entities/player.entity';
 import { Repository } from 'typeorm';
+import { Players } from '../interfaces/player.interface';
+
 
 @Injectable()
 export class PlayerService {
   constructor(
-    @InjectRepository(Player) private readonly playerRepository: Repository<Player>,
+    @InjectRepository(PlayerEntity)
+    private readonly playerRepository: Repository<PlayerEntity>,
   ) {}
 
-  create(createPlayerDto: CreatePlayerDto): Promise<Player> {
-    const player : Player =  new Player();
-    player.id = createPlayerDto.id;
-    player.name = createPlayerDto.name;
-    player.club = createPlayerDto.club;
+  async create(createPlayerDto: CreatePlayerDto): Promise<PlayerEntity> {
+    const player = this.playerRepository.create(createPlayerDto);
     return this.playerRepository.save(player);
   }
 
-  findAll(): Promise<Player[]> {
+  findAll(): Promise<PlayerEntity[]> {
     return this.playerRepository.find();
   }
 
-  viewPlayer(id: number): Promise<Player> {
-    return this.playerRepository.findOneBy({ id });
+  async viewPlayer(id: number): Promise<PlayerEntity> {
+    const player = await this.playerRepository.findOneBy({ id });
+    if (!player) {
+      throw new NotFoundException(`Player with ID ${id} not found`);
+    }
+    return player;
   }
 
-
-  updatePlayer(id: number, updateUserDto: UpdatePlayerDto): Promise<Player> {
-    const player: Player = new Player();
-    player.id = id;
-    player.name = updateUserDto.name;
-    player.club = updateUserDto.club;
+  async updatePlayer(id: number, updatePlayerDto: UpdatePlayerDto): Promise<PlayerEntity> {
+    const player = await this.viewPlayer(id);
+    Object.assign(player, updatePlayerDto);
     return this.playerRepository.save(player);
   }
 
-  removePlayer(id: number): Promise<{ affected?: number }> {
-    return this.playerRepository.delete(id);
+  async removePlayer(id: number): Promise<{ affected?: number }> {
+    const result = await this.playerRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Player with ID ${id} not found`);
+    }
+    return result;
   }
+  private readonly player = [
+    {
+      userId: 1,
+      username: 'toni',
+      password: '123456',
+    },
+  ];
+  
+  async findOne(name: string): Promise<Players | undefined> {
+    const user = this.player.find(user => user.username === name);
+    
+    if (user) {
+      const player: Players = {
+        id: user.userId,    
+        name: user.username, 
+        club: 'Some Club',  
+      };
+      return player;
+    }
+    return undefined;
+  }
+  
 }

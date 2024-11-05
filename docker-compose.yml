@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    container_name: my_postgres
+    environment:
+      POSTGRES_USER: toni
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: player
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/player.sql:/docker-entrypoint-initdb.d/player.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U toni"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+    container_name: my_nestjs_app
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: toni
+      DB_PASSWORD: 123456
+      DB_DATABASE: player
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy  # Đảm bảo ứng dụng chỉ khởi động khi db đã sẵn sàng
+
+volumes:
+  postgres_data:
